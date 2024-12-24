@@ -9,4 +9,4 @@ go-build:
     - "zip goplayer.zip goplayer"
   artifacts:
     paths:
-      - "main.zip"
+      - "goplayer.zip"

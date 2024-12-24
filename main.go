@@ -1,126 +1,130 @@
 package main
+
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
 )
 
-
-// create waitgroup
-var waitGroup = sync.WaitGroup{}
-
 // create state map with mutex for thread safety
 var (
-  stateMutex sync.RWMutex
-  playerState = make(map[string]struct {
-    status string
-    artist string
-    title  string
-  })
+	stateMutex  sync.RWMutex
+	playerState = make(map[string]struct {
+		status string
+		artist string
+		title  string
+	})
 )
 
-
-// main function
 func main() {
+
+	// check if player argument is provided
+	if len(os.Args) < 2 {
+		fmt.Println("Please provide a player name as argument")
+		fmt.Println("Example: ./program firefox")
+		os.Exit(1)
+	}
+
+	// get the player argument
+	argument := os.Args[1]
+
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
-	
-		for {
-			select {
-			case <-ticker.C:
 
-				// get players
-				players := getActivePlayers()
-	
-				// process each player
-				for _, player := range players {
+	for {
+		select {
+		case <-ticker.C:
 
-					waitGroup.Add(1)
+			playerName := argument
+			player := getPlayerName(playerName)
 
-					go func(playerName string) {
-						defer waitGroup.Done()
-	
-						// define content
-						icon                := getPlayerIcon(playerName)
-						newStatus           := getStatus(playerName)
-						newArtist, newTitle := getArtistTitle(playerName)
-	
-						// update state if we got valid output
-						stateMutex.Lock()
-						if newStatus != "?" || newArtist != "" || newTitle != "" {
-							playerState[playerName] = struct {
-								status string
-								artist string
-								title  string
-							}{
-								status: newStatus,
-								artist: newArtist,
-								title:  newTitle,
-							}
-						}
-	
-						// get current state
-						state, exists := playerState[playerName]
-						if !exists {
-							state = struct {
-								status string
-								artist string
-								title  string
-							}{
-								status: newStatus,
-								artist: newArtist,
-								title:  newTitle,
-							}
-						}
-						stateMutex.Unlock()
-	
-						// barf output only if we have data
-						if state.artist != "" || state.title != "" {
-							fmt.Printf("%s %s %s - %s\n", icon, state.status, state.artist, state.title)
-						}
-					}(player)
+			go func(playerName string) {
+
+				// define content
+				icon := getPlayerIcon(playerName)
+				newStatus := getStatus(playerName)
+				newArtist, newTitle := getArtistTitle(playerName)
+
+				// update state if we got valid output
+				stateMutex.Lock()
+				if newStatus != "?" || newArtist != "" || newTitle != "" {
+					playerState[playerName] = struct {
+						status string
+						artist string
+						title  string
+					}{
+						status: newStatus,
+						artist: newArtist,
+						title:  newTitle,
+					}
 				}
-				waitGroup.Wait()
+
+				// get current state
+				state, exists := playerState[playerName]
+				if !exists {
+					state = struct {
+						status string
+						artist string
+						title  string
+					}{
+						status: newStatus,
+						artist: newArtist,
+						title:  newTitle,
+					}
+				}
+				stateMutex.Unlock()
+
+				// barf output only if we have data
+				if state.artist != "" || state.title != "" {
+					fmt.Printf("%s %s %s - %s\n", icon, state.status, state.artist, state.title)
+				}
+			}(player)
 		}
 	}
 }
 
-
-// function to get active players
-func getActivePlayers() []string {
+// function to get player name
+func getPlayerName(playerName string) string {
 
 	// get players
 	cmd := exec.Command("playerctl", "-l")
-	player, _ := cmd.Output()
+	output, _ := cmd.Output()
 
-	// return players
-	players := strings.Split(strings.TrimSpace(string(player)), "\n")
-	return players
+	// split output into lines
+	players := strings.Split(strings.TrimSpace(string(output)), "\n")
+
+	// find the line containing the player name
+	for _, player := range players {
+		if strings.Contains(player, playerName) {
+			playerName = player
+		}
+	}
+
+	return playerName
 }
-
 
 func getStatus(player string) string {
 
-  status_icon := "?"
+	status_icon := "?"
 
-  // get status
-  cmd := exec.Command("playerctl", "-p", player, "status")
-  output, _ := cmd.Output()
-  status    := string(output)
+	// get status
+	cmd := exec.Command("playerctl", "-p", player, "status")
+	output, _ := cmd.Output()
+	status := string(output)
 
-  if strings.Contains(status, "Playing") {
-	  status_icon = ""
-  } 
+	if strings.Contains(status, "Playing") {
+		status_icon = ""
+	}
 
-  if strings.Contains(status, "Paused") {
-	  status_icon = ""
-  } 
+	if strings.Contains(status, "Paused") {
+		status_icon = ""
+	}
 
-  return status_icon
+	return status_icon
 }
-
 
 // function to get metadata per player
 func getArtistTitle(player string) (string, string) {
@@ -130,14 +134,13 @@ func getArtistTitle(player string) (string, string) {
 	output, _ := cmd.Output()
 
 	// convert output to string and split by the delimiter
-  // the delimiter |%| is chosen and thought of to be unique
-  // as the delimiter should be in a video or song name
-	parts  := strings.Split(strings.TrimSpace(string(output)), "|%|")
-  artist := strings.TrimSpace(parts[0])
-  title  := strings.TrimSpace(parts[1])
+	// the delimiter |%| is chosen and thought of to be unique
+	// as the delimiter should be in a video or song name
+	parts := strings.Split(strings.TrimSpace(string(output)), "|%|")
+	artist := strings.TrimSpace(parts[0])
+	title := strings.TrimSpace(parts[1])
 	return artist, title
 }
-
 
 // function to get player icons
 func getPlayerIcon(player string) string {

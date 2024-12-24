@@ -53,8 +53,6 @@ func monitorPlayer(ctx context.Context, player string) {
 
 func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
   var execCommand = player
-
-	// if player is firefox, get the actual player name
 	if player == "firefox" {
 		actualPlayer, err := findFirefoxPlayer(ctx)
 		if err != nil {
@@ -64,27 +62,26 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 		player = actualPlayer
 	}
 
-	// check if player is running
 	pgrepCmd := exec.CommandContext(ctx, "pgrep", execCommand)
 	if err := pgrepCmd.Run(); err != nil {
 		return nil, fmt.Errorf("player not running")
 	}
 
-	titleCmd  := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
 	artistCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "artist")
+	titleCmd  := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
+
+  artistBytes, err := artistCmd.Output()
+  if err != nil {
+    return nil, err
+  }
 
 	titleBytes, err := titleCmd.Output()
 	if err != nil {
 		return nil, err
 	}
 
-	artistBytes, err := artistCmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
-	title  := strings.TrimSpace(string(titleBytes))
 	artist := strings.TrimSpace(string(artistBytes))
+	title  := strings.TrimSpace(string(titleBytes))
 
 	if title == "" || artist == "" {
 		return nil, fmt.Errorf("empty metadata")

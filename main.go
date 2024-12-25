@@ -67,8 +67,14 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 		return nil, fmt.Errorf("player not running")
 	}
 
+	albumCmd  := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "album")
 	artistCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "artist")
 	titleCmd  := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
+
+  albumBytes, err := albumCmd.Output()
+  if err != nil {
+    return nil, err
+  }
 
   artistBytes, err := artistCmd.Output()
   if err != nil {
@@ -80,8 +86,15 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 		return nil, err
 	}
 
+	album  := strings.TrimSpace(string(albumBytes))
 	artist := strings.TrimSpace(string(artistBytes))
 	title  := strings.TrimSpace(string(titleBytes))
+
+  // spotify doesnt show podcast artists, 
+  // so we have to use album as artist name
+  if artist == "" || album != "" {
+    artist = album
+  }
 
 	if title == "" || artist == "" {
 		return nil, fmt.Errorf("empty metadata")

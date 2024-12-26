@@ -90,9 +90,9 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 	artist := strings.TrimSpace(string(artistBytes))
 	title  := strings.TrimSpace(string(titleBytes))
 
-  album  = replaceAmpersand(album)
-  artist = replaceAmpersand(artist)
-  title  = replaceAmpersand(title)
+  album  = replaceChars(album,  "&", "&amp;")
+  artist = replaceChars(artist, "&", "&amp;")
+  title  = replaceChars(title,  "&", "&amp;")
 
   // spotify doesnt show podcast artists, 
   // so we have to use album as artist name
@@ -110,9 +110,9 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 	}, nil
 }
 
-func replaceAmpersand(line string) string {
-  if strings.Contains(line, "&") {
-    line = strings.Replace(line, "&", "&amp;", -1)
+func replaceChars(line string, old string, new string) string {
+  if strings.Contains(line, old) {
+    line = strings.Replace(line, old, new, -1)
   }
   return line
 }

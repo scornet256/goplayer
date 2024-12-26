@@ -90,6 +90,8 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 	artist := strings.TrimSpace(string(artistBytes))
 	title  := strings.TrimSpace(string(titleBytes))
 
+  // the output in waybar is used for html
+  // so we have to escape some characters
   album  = replaceChars(album,  "&", "&amp;")
   artist = replaceChars(artist, "&", "&amp;")
   title  = replaceChars(title,  "&", "&amp;")

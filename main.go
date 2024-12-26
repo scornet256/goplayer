@@ -112,9 +112,9 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 	}, nil
 }
 
-func replaceChars(line string, old string, new string) string {
-  if strings.Contains(line, old) {
-    line = strings.Replace(line, old, new, -1)
+func replaceChars(line string, oldChar string, newChar string) string {
+  if strings.Contains(line, oldChar) {
+    line = strings.Replace(line, oldChar, newChar, -1)
   }
   return line
 }

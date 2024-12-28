@@ -34,18 +34,24 @@ func monitorPlayer(ctx context.Context, player string) {
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <- ctx.Done():
 			return
-		case <-ticker.C:
+		case <- ticker.C:
 			cmdCtx, cancel := context.WithTimeout(ctx, time.Duration(commandTimeout) * time.Second)
+
 			if data, err := getPlayerData(cmdCtx, player); err == nil {
+				if lastData == nil || 
+				   lastData.Artist != data.Artist || 
+				   lastData.Title != data.Title {
+					fmt.Printf("%s - %s\n", data.Artist, data.Title)
+				}
 				lastData = data
-				fmt.Printf("%s - %s\n", data.Artist, data.Title)
 			} else if err.Error() == "player not running" {
 				fmt.Println("")
 			} else if lastData != nil {
 				fmt.Printf("%s - %s\n", lastData.Artist, lastData.Title)
 			}
+
 			cancel()
 		}
 	}
@@ -53,6 +59,7 @@ func monitorPlayer(ctx context.Context, player string) {
 
 func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
   var execCommand = player
+
 	if player == "firefox" {
 		actualPlayer, err := findFirefoxPlayer(ctx)
 		if err != nil {

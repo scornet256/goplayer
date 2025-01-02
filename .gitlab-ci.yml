@@ -9,6 +9,6 @@ go-build:
     - "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o goplayer main.go"
     - "zip goplayer.zip goplayer"
   artifacts:
-    name: "${CI_PROJECT_NAME}-${CI_COMMIT_TAG}"
+    name: "${CI_PROJECT_NAME}"
     paths:
       - "goplayer.zip"

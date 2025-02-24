@@ -6,9 +6,8 @@ go-build:
   stage: "build"
   image: "cr.simoncor.net/siempie/go-build:latest"
   script:
-    - "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o goplayer main.go"
-    - "zip goplayer.zip goplayer"
+    - "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o goplayer cmd/*.go"
   artifacts:
     name: "${CI_PROJECT_NAME}"
     paths:
-      - "goplayer.zip"
+      - "goplayer"

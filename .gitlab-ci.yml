@@ -6,7 +6,7 @@ go-build:
   stage: "build"
   image: "cr.simoncor.net/siempie/go-build:latest"
   script:
-    - "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o goplayer cmd/*.go"
+    - "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o goplayer cmd/goplayer/*.go"
   artifacts:
     name: "${CI_PROJECT_NAME}"
     paths:

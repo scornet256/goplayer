@@ -1,4 +1,5 @@
 package main
+
 import (
 	"context"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 
 var commandTimeout = 1
 var loopTimeout = 2
+
 type PlayerData struct {
 	Title  string
 	Artist string
@@ -34,15 +36,15 @@ func monitorPlayer(ctx context.Context, player string) {
 
 	for {
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return
-		case <- ticker.C:
-			cmdCtx, cancel := context.WithTimeout(ctx, time.Duration(commandTimeout) * time.Second)
+		case <-ticker.C:
+			cmdCtx, cancel := context.WithTimeout(ctx, time.Duration(commandTimeout)*time.Second)
 
 			if data, err := getPlayerData(cmdCtx, player); err == nil {
-				if lastData == nil || 
-				   lastData.Artist != data.Artist || 
-				   lastData.Title != data.Title {
+				if lastData == nil ||
+					lastData.Artist != data.Artist ||
+					lastData.Title != data.Title {
 					fmt.Printf("%s - %s\n", data.Artist, data.Title)
 				}
 				lastData = data
@@ -58,14 +60,14 @@ func monitorPlayer(ctx context.Context, player string) {
 }
 
 func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
-  var execCommand = player
+	var execCommand = player
 
 	if player == "firefox" {
 		actualPlayer, err := findFirefoxPlayer(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("player not running")
 		}
-    execCommand = "zen" 
+		execCommand = "zen"
 		player = actualPlayer
 	}
 
@@ -74,40 +76,41 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 		return nil, fmt.Errorf("player not running")
 	}
 
-	albumCmd  := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "album")
+	albumCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "album")
 	artistCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "artist")
-	titleCmd  := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
+	titleCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
 
-  albumBytes, err := albumCmd.Output()
-  if err != nil {
-    return nil, err
-  }
+	albumBytes, err := albumCmd.Output()
+	if err != nil {
+		return nil, err
+	}
 
-  artistBytes, err := artistCmd.Output()
-  if err != nil {
-    return nil, err
-  }
+	artistBytes, err := artistCmd.Output()
+	if err != nil {
+		return nil, err
+	}
 
 	titleBytes, err := titleCmd.Output()
 	if err != nil {
 		return nil, err
 	}
 
-	album  := strings.TrimSpace(string(albumBytes))
-	artist := strings.TrimSpace(string(artistBytes))
-	title  := strings.TrimSpace(string(titleBytes))
+	// function to cleanup the string
+	cleanString := func(stringBytes []byte) string {
+		newString := strings.TrimSpace(string(stringBytes))
+		newString = replaceChars(newString, "&", "&amp;")
+		return newString
+	}
 
-  // the output in waybar is used for html
-  // so we have to escape some characters
-  album  = replaceChars(album,  "&", "&amp;")
-  artist = replaceChars(artist, "&", "&amp;")
-  title  = replaceChars(title,  "&", "&amp;")
+	album := cleanString(albumBytes)
+	artist := cleanString(artistBytes)
+	title := cleanString(titleBytes)
 
-  // spotify doesnt show podcast artists, 
-  // so we have to use album as artist name
-  if artist == "" || album != "" {
-    artist = album
-  }
+	// spotify doesnt show podcast artists,
+	// so we have to use album as artist name
+	if artist == "" || album != "" {
+		artist = album
+	}
 
 	if title == "" || artist == "" {
 		return nil, fmt.Errorf("empty metadata")
@@ -120,13 +123,13 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 }
 
 func replaceChars(line string,
-                  oldChar string,
-                  newChar string) string {
+	oldChar string,
+	newChar string) string {
 
-  if strings.Contains(line, oldChar) {
-    line = strings.Replace(line, oldChar, newChar, -1)
-  }
-  return line
+	if strings.Contains(line, oldChar) {
+		line = strings.Replace(line, oldChar, newChar, -1)
+	}
+	return line
 }
 
 func findFirefoxPlayer(ctx context.Context) (string, error) {

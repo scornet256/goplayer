@@ -62,8 +62,17 @@ func monitorPlayer(ctx context.Context, player string) {
 func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 	var execCommand = player
 
+	if player == "chromium" {
+		actualPlayer, err := findPlayerName(ctx, player)
+		if err != nil {
+			return nil, fmt.Errorf("player not running")
+		}
+		execCommand = "chrome"
+		player = actualPlayer
+	}
+
 	if player == "firefox" {
-		actualPlayer, err := findFirefoxPlayer(ctx)
+		actualPlayer, err := findPlayerName(ctx, player)
 		if err != nil {
 			return nil, fmt.Errorf("player not running")
 		}
@@ -132,7 +141,7 @@ func replaceChars(line string,
 	return line
 }
 
-func findFirefoxPlayer(ctx context.Context) (string, error) {
+func findPlayerName(ctx context.Context, playerToFind string) (string, error) {
 	cmd := exec.CommandContext(ctx, "playerctl", "-l")
 	output, err := cmd.Output()
 	if err != nil {
@@ -141,9 +150,9 @@ func findFirefoxPlayer(ctx context.Context) (string, error) {
 
 	players := strings.Split(strings.TrimSpace(string(output)), "\n")
 	for _, player := range players {
-		if strings.Contains(player, "firefox") {
+		if strings.Contains(player, playerToFind) {
 			return player, nil
 		}
 	}
-	return "", fmt.Errorf("firefox player not found")
+	return "", fmt.Errorf("%v player not found", playerToFind)
 }

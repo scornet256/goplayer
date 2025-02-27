@@ -86,19 +86,18 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 	}
 
 	albumCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "album")
-	artistCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "artist")
-	titleCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
-
 	albumBytes, err := albumCmd.Output()
 	if err != nil {
 		return nil, err
 	}
 
+	artistCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "artist")
 	artistBytes, err := artistCmd.Output()
 	if err != nil {
 		return nil, err
 	}
 
+	titleCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
 	titleBytes, err := titleCmd.Output()
 	if err != nil {
 		return nil, err

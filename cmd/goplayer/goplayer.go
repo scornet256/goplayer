@@ -85,34 +85,31 @@ func getPlayerData(ctx context.Context, player string) (*PlayerData, error) {
 		return nil, fmt.Errorf("player not running")
 	}
 
-	albumCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "album")
-	albumBytes, err := albumCmd.Output()
-	if err != nil {
-		return nil, err
-	}
+  // small function to find metadata from player
+  metaCmd := func(ctx context.Context, player string, metadata string) (string, error) {
+	  cmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", metadata)
+    cmdBytes, err := cmd.Output()
+    return string(cmdBytes), err
+  }
 
-	artistCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "artist")
-	artistBytes, err := artistCmd.Output()
-	if err != nil {
-		return nil, err
-	}
+  albumString, err := metaCmd(ctx, player, "album")
+  titleString, err := metaCmd(ctx, player, "title")
+  artistString, err := metaCmd(ctx, player, "artist")
 
-	titleCmd := exec.CommandContext(ctx, "playerctl", "-p", player, "metadata", "title")
-	titleBytes, err := titleCmd.Output()
-	if err != nil {
-		return nil, err
-	}
+  if err != nil {
+    return nil, fmt.Errorf("player metadata incorrect: %v", err)
+  }
 
 	// function to cleanup the string
-	cleanString := func(stringBytes []byte) string {
-		newString := strings.TrimSpace(string(stringBytes))
+	cleanString := func(metaString string) string {
+		newString := strings.TrimSpace(metaString)
 		newString = replaceChars(newString, "&", "&amp;")
 		return newString
 	}
 
-	album := cleanString(albumBytes)
-	artist := cleanString(artistBytes)
-	title := cleanString(titleBytes)
+	album := cleanString(albumString)
+	artist := cleanString(artistString)
+	title := cleanString(titleString)
 
 	// spotify doesnt show podcast artists,
 	// so we have to use album as artist name
